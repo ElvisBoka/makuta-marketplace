@@ -1,7 +1,8 @@
 {
   "name": "makutaplace-backend",
   "version": "1.0.0",
-  "type": "module",
+  "type": "commonjs",
+
   "scripts": {
     "dev": "node server.js",
     "db:push": "npx prisma db push",
