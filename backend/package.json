@@ -2,9 +2,9 @@
   "name": "makutaplace-backend",
   "version": "1.0.0",
   "type": "commonjs",
-
   "scripts": {
-    "dev": "node server.js",
+    "dev": "node backend/server.js",
+    "start": "node backend/server.js",
     "db:push": "npx prisma db push",
     "db:seed": "node prisma/seed.js",
     "db:generate": "npx prisma generate",
@@ -13,7 +13,13 @@
   "dependencies": {
     "@prisma/client": "^5.5.2",
     "bcryptjs": "^2.4.3",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "helmet": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
     "validator": "^13.11.0"
   },
   "devDependencies": {
