@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String?  @unique
+  phone       String   @unique
+  password    String
+  firstName   String
+  lastName    String
+  avatar      String?
+  role        UserRole @default(CLIENT)
+  isVerified  Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  
+  // KYC Verification
+  idNumber    String?
+  idType      String?
+  idPhoto     String?
+  selfiePhoto String?
+  nifNumber   String?
+  
+  // Location
+  province    String?
+  city        String?
+  commune     String?
+  address     String?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  listings    Listing[]
+  reviews     Review[]
+  payments    Payment[]
+  messages    Message[]
+  favorites   Favorite[]
+  
+  @@map("users")
+}
+
+model Listing {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Float
+  currency    String   @default("CDF")
+  categoryId  String
+  userId      String
+  
+  // Details
+  type        ListingType // RENT, SALE, SERVICE
+  status      ListingStatus @default(PENDING)
+  isFeatured  Boolean @default(false)
+  isUrgent    Boolean @default(false)
+  
+  // Location
+  province    String
+  city        String
+  commune     String
+  exactLocation String?
+  
+  // Media
+  images      String[] // JSON array of image URLs
+  videos      String[] // JSON array of video URLs
+  
+  // Contact (hidden until approved)
+  contactPhone String
+  contactEmail String?
+  
+  // Metadata
+  viewCount   Int @default(0)
+  expireAt    DateTime?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  payments   Payment[]
+  reviews    Review[]
+  favorites  Favorite[]
+  
+  @@map("listings")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  nameFr      String?
+  nameSw      String?
+  description String?
+  icon        String?
+  slug        String   @unique
+  parentId    String?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  parent      Category? @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryToCategory")
+  listings    Listing[]
+  
+  @@map("categories")
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  userId      String
+  listingId   String?
+  amount      Float
+  currency    String   @default("CDF")
+  paymentType PaymentType
+  status      PaymentStatus @default(PENDING)
+  
+  // Mobile Money Details
+  provider    MobileMoneyProvider
+  phoneNumber String
+  transactionId String?
+  
+  // Metadata
+  description String?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  @@map("payments")
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  rating      Int      // 1-5
+  comment     String?
+  serviceQuality Int   // 1-5
+  communication Int    // 1-5
+  timeliness  Int      // 1-5
+  
+  reviewerId  String
+  listingId   String
+  userId      String // User being reviewed
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  reviewer User   @relation("ReviewReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  user     User   @relation("ReviewUser", fields: [userId], references: [id], onDelete: Cascade)
+  listing  Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  @@map("reviews")
+}
+
+model Favorite {
+  id        String @id @default(cuid())
+  userId    String
+  listingId String
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, listingId])
+  @@map("favorites")
+}
+
+model Message {
+  id        String @id @default(cuid())
+  content   String
+  senderId  String
+  receiverId String
+  listingId String?
+  isRead    Boolean @default(false)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  // Relations
+  sender   User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  listing  Listing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  @@map("messages")
+}
+
+// Enums
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  CLIENT
+  VENDOR
+}
+
+enum ListingType {
+  RENT
+  SALE
+  SERVICE
+}
+
+enum ListingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum PaymentType {
+  LISTING_FEE
+  SUBSCRIPTION
+  PROMOTION
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum MobileMoneyProvider {
+  AIRTEL_MONEY
+  MPESA
+  ORANGE_MONEY
+  MOMO
+}
